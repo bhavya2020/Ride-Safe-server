@@ -1,0 +1,8 @@
+c0 		0 safe
+c1 c3 == 	1 texting
+c2 c4 ==	2 talking on phone
+c5		3 operating radio
+c6		4 drinking	
+c7		5 reaching behind
+c8 		6 hair and makeup
+c9		7 talking to passenger
