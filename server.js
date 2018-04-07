@@ -29,7 +29,7 @@ app.use(express.urlencoded({
 /*
     Routes
  */
-app.use("/",require("./routes/auth"));
+app.use("/",require("./routes/user"));
 // app.use("/users",require("./routes/user"));
 
 
