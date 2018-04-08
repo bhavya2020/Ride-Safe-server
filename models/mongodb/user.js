@@ -5,7 +5,7 @@ const userSchema = mongoose.Schema({
     DLno:String,
     licencePlateNo:String,
     gender: String,
-    age:Number,
+    age:String,
     phoneNo: String
 });
 

@@ -162,7 +162,23 @@ route.post('/gyroscope',(req,res)=>{
         res.send(err);
     })
 });
-
+route.get('/report/:email',(req,res)=>{
+   models.user.findOne({
+       email: req.params.email
+   }).then((user)=>{
+      return models.culprits.find({
+           plateNo:user.licencePlateNo
+       })
+   }) .then((reports)=>{
+       res.send({
+           reports:reports
+       })
+   }).catch((err)=>{
+       res.send({
+           reports:["err"]
+       });
+   })
+});
 route.post('/report',(req,res)=>{
     models.culprits.create({
         reporterID:req.body.reporterID,
