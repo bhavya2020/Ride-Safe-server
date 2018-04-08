@@ -162,4 +162,22 @@ route.post('/gyroscope',(req,res)=>{
         res.send(err);
     })
 });
+
+route.post('/report',(req,res)=>{
+    models.culprits.create({
+        reporterID:req.body.reporterID,
+        plateNo:req.body.plateNo,
+    }).then((culprit)=>{
+        culprit.categories.push(req.body.category0);
+        culprit.categories.push(req.body.category1);
+        culprit.categories.push(req.body.category2);
+        culprit.categories.push(req.body.category3);
+        culprit.categories.push(req.body.category4);
+        culprit.categories.push(req.body.category5);
+        culprit.save();
+        res.send("done");
+    }).catch((err)=>{
+        res.send("notDone");
+    })
+});
 module.exports = route;

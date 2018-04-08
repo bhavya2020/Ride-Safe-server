@@ -2,11 +2,9 @@ const mongoose = require("mongoose");
 
 const culpritSchema = mongoose.Schema({
 
-    licencePlateNo:String,
-    count:{
-        type:Number,
-        default:1
-    }
+    plateNo:String,
+    categories:[Boolean],
+    reporterID:String
 });
 
 module.exports = mongoose.model("culprit", culpritSchema);

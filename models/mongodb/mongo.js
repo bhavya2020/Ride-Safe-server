@@ -4,7 +4,6 @@ const CONFIG = require("../../config");
 
 //Require DB models
 const user = require("./user");
-const report=require('./report');
 const culprits=require('./culprits');
 const sensor=require('./sensor');
 const camera=require('./camera');
@@ -27,5 +26,5 @@ mongoose.connect(`mongodb://${CONFIG.MONGO.HOST}:${CONFIG.MONGO.PORT}/${CONFIG.M
 
 //Expose models for use elsewhere
 module.exports = {
-    user,report,culprits,sensor,camera
+    user,culprits,sensor,camera
 };
