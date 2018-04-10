@@ -46,7 +46,7 @@ async function sendDriverNames(map,res) {
             _id:mongoose.Types.ObjectId(driver)
         }).then((user)=>{
             let email=user[0].email;
-            driverNames.push(email.substring(0,email.length-10));
+            driverNames.push(email);
         }).catch((err)=>{
             console.log(err);
         })

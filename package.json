@@ -11,13 +11,15 @@
   "description": "",
   "dependencies": {
     "csv-express": "^1.2.2",
-    "csv-parse": "^2.1.0",
+    "csv-parse": "^2.2.0",
     "express": "^4.16.3",
-    "json2csv": "^4.0.3",
+    "json2csv": "^4.0.4",
     "mongod": "^2.0.0",
-    "mongoose": "^5.0.13",
+    "mongoose": "^5.0.14",
     "mysql2": "^1.5.3",
     "python-shell": "^0.5.0",
-    "sequelize": "^4.37.6"
+    "sequelize": "^4.37.6",
+    "socket.io": "^2.1.0",
+    "socketio": "^1.0.0"
   }
 }
