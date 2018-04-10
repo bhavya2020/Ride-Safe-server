@@ -5,7 +5,7 @@ const express = require("express");
 const path = require("path");
 const mongoose = require("mongoose");
 
-
+const csv      = require('csv-express');
 /*
     Import User Files
  */
@@ -29,6 +29,7 @@ app.use(express.urlencoded({
 /*
     Routes
  */
+app.use('/',express.static(path.join(__dirname,"./public_html")));
 app.use("/",require("./routes/user"));
 // app.use("/users",require("./routes/user"));
 

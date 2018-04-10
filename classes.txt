@@ -6,3 +6,9 @@ c6		4 drinking
 c7		5 reaching behind
 c8 		6 hair and makeup
 c9		7 talking to passenger
+
+0-> aggacc
+1-> nonagg
+2-> break
+3-> left
+4-> right
