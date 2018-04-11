@@ -10,6 +10,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "body-parser": "^1.18.2",
     "csv-express": "^1.2.2",
     "csv-parse": "^2.2.0",
     "express": "^4.16.3",

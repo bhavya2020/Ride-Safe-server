@@ -329,4 +329,17 @@ route.post('/addDriver', (req, res) => {
             })
     }
 });
+let imgName;
+route.post("/click/:email",(req,res)=>{
+    let dir = './public_html/images/'+req.params.email;
+
+    if (!fs.existsSync(dir)){
+        imgName=1;
+        fs.mkdirSync(dir);
+    }
+    let bitmap = new Buffer(req.body.img, 'base64');
+    fs.writeFileSync("public_html/images/"+req.params.email+"/"+imgName+".jpg", bitmap);
+    imgName++;
+    res.send("got");
+});
 module.exports = route;
