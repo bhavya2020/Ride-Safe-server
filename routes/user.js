@@ -1,53 +1,125 @@
 const route = require("express").Router();
 const CONFIG = require("../config");
 const fs = require('fs');
-const mongoose=require('mongoose');
+const mongoose = require('mongoose');
+const parse = require('csv-parse');
 const path = require('path');
 const models = require('../models/mongodb/mongo');
 const PythonShell = require('python-shell');
 const Json2csvTransform = require('json2csv').Transform;
 
-function makePrediction(uname) {
+async function makeMongoDbFromCsv(uname) {
+
+    let csvPath = path.join(__dirname, "../", "monitorPrediction/" + uname + ".csv");
+    if (fs.existsSync(csvPath)) {
+
+        models.sensorTripResult.create({
+            email: uname
+        })
+            .then((result) => {
+                let flag = false;
+                let newTrip = result.trip;
+                let csvData = [];
+                fs.createReadStream(csvPath)
+                    .pipe(parse({delimiter: ','}))
+                    .on('data', function (csvrow) {
+                        //do something with csvrow
+                        // console.log(csvrow[0]);
+                        if (flag) {
+                            result.trip.push({
+                                class: csvrow[3],
+                                time: csvrow[0],
+                                latitude: csvrow[1],
+                                longitude: csvrow[2],
+                            });
+                        } else
+                            flag = true;
+                        csvData.push(csvrow);
+                    })
+                    .on('end', function () {
+                        result.save();
+                        //do something with csvData
+                        // console.log(csvData[1][0]);
+
+                        fs.unlink(path.join(__dirname, "../", "monitorResult/" + uname + ".csv"), (err) => {
+                            fs.unlink(path.join(__dirname, "../", "monitorPrediction/" + uname + ".csv"), () => {
+                            })
+                        });
+                        models.sensor.remove({
+                            email:uname
+                        }).then(()=>{
+                            console.log("removed");
+                        }).catch((err)=>{
+                            console.log(err);
+                        })
+
+                    }).on('error', (err) => {
+                    console.log(err);
+                });
+
+            })
+            .catch((err) => {
+                console.log(err);
+            });
+
+    } else {
+
+    }
+}
+
+async function makePrediction(uname) {
 
     models.sensor.find({
         email: uname
     }).lean().exec()
         .then((sensorData) => {
-            const json2csv = require('json2csv').parse;
-            const fields = ['sensorType', 'x', 'y', 'z', 'time'];
-            const opts = {fields};
-            const csv = json2csv(sensorData, opts);
-            fs.createWriteStream(path.join(__dirname, "../", "monitorResult/" + uname + ".csv"), {encoding: 'utf-8'});
-            fs.createWriteStream(path.join(__dirname, "../", "monitorPrediction/" + uname + ".csv"), {encoding: 'utf-8'});
-            console.log("built");
-            fs.appendFile(path.join(__dirname, "../", "monitorResult/" + uname + ".csv"), csv, () => {
-                console.log("appended");
-                let options = {
-                    mode: 'text',
-                    pythonPath: '/usr/bin/python3.5',
-                    pythonOptions: ['-u'],
-                    scriptPath: path.join(__dirname, "../"),
-                    args: [path.join(__dirname, "../", "sensors_model.h5"), path.join(__dirname, "../", "monitorResult/" + uname + ".csv"), path.join(__dirname, "../", "monitorPrediction/" + uname + ".csv")]
-                };
-                PythonShell.run('sensors_prediction.py', options, function (err, results) {
-                    if (err) console.log(err);
-                    // results is an array consisting of messages collected during execution
-                    console.log('results: %j', results);
+        console.log(sensorData.length);
+            if (sensorData.length > 10) {
+                const json2csv = require('json2csv').parse;
+                const fields = ['sensorType', 'x', 'y', 'z', 'time', 'latitude', 'longitude'];
+                const opts = {fields};
+                const csv = json2csv(sensorData, opts);
+                fs.createWriteStream(path.join(__dirname, "../", "monitorResult/" + uname + ".csv"), {encoding: 'utf-8'});
+                fs.createWriteStream(path.join(__dirname, "../", "monitorPrediction/" + uname + ".csv"), {encoding: 'utf-8'});
+                console.log("built");
+                fs.appendFile(path.join(__dirname, "../", "monitorResult/" + uname + ".csv"), csv, () => {
+                    console.log("appended");
+
+                    let options = {
+                        mode: 'text',
+                        pythonPath: '/usr/bin/python3.5',
+                        pythonOptions: ['-u'],
+                        scriptPath: path.join(__dirname, "../"),
+                        args: [path.join(__dirname, "../", "sensors_pipeline_1.h5"), path.join(__dirname, "../", "sensor_pipeline_2.h5"), path.join(__dirname, "../", "monitorResult/" + uname + ".csv"), path.join(__dirname, "../", "monitorPrediction/" + uname + ".csv")]
+                    };
+                    PythonShell.run('sensors_prediction.py', options, function (err, results) {
+                        if (err) console.log(err);
+                        makeMongoDbFromCsv(uname).then(() => {
+                            console.log("result-db built");
+                        }).catch((err) => {
+                            console.log(err);
+                        })
+
+                        // results is an array consisting of messages collected during execution
+
+                    });
                 });
-            });
-        });
+            }
+        }).catch((err) => {
+        console.log(err);
+    })
 
 }
-async function sendDriverNames(map,res) {
-    let driverNames=[];
-    for(let driver of map.drivers)
-    {
-      await   models.user.find({
-            _id:mongoose.Types.ObjectId(driver)
-        }).then((user)=>{
-            let email=user[0].email;
+
+async function sendDriverNames(map, res) {
+    let driverNames = [];
+    for (let driver of map.drivers) {
+        await   models.user.find({
+            _id: mongoose.Types.ObjectId(driver)
+        }).then((user) => {
+            let email = user[0].email;
             driverNames.push(email);
-        }).catch((err)=>{
+        }).catch((err) => {
             console.log(err);
         })
     }
@@ -87,6 +159,7 @@ route.post('/signUp', (req, res) => {
         res.send("notDone")
     })
 });
+
 route.get('/isUnder18/:email', (req, res) => {
 
     let csvPath = path.join(__dirname, "../", "under18result/", req.params.email + ".csv");
@@ -151,66 +224,96 @@ route.post('/update', (req, res) => {
 });
 
 route.post('/accelerometer', (req, res) => {
-    models.sensor.create({
-        email: req.body.email,
-        x: req.body.x,
-        y: req.body.y,
-        z: req.body.z,
-        sensorType: "accelerometer",
-        time: req.body.time
-    }).then(() => {
-        res.send("done")
-    }).catch((err) => {
-        res.send(err);
-    })
+    if (req.body.latitude !== "0.0") {
+        models.sensor.create({
+            email: req.body.email,
+            x: req.body.x,
+            y: req.body.y,
+            z: req.body.z,
+            sensorType: "accelerometer",
+            time: req.body.time,
+            latitude: req.body.latitude,
+            longitude: req.body.longitude
+        }).then(() => {
+            res.send("done")
+        }).catch((err) => {
+            res.send(err);
+        })
+    } else {
+        res.send("done");
+    }
 });
 
 route.post('/linearAcceleration', (req, res) => {
-    models.sensor.create({
-        email: req.body.email,
-        x: req.body.x,
-        y: req.body.y,
-        z: req.body.z,
-        sensorType: "linearAcceleration",
-        time: req.body.time
-    }).then(() => {
-        res.send("done")
-    }).catch((err) => {
-        res.send(err);
-    })
+    if (req.body.latitude !== "0.0") {
+        models.sensor.create({
+            email: req.body.email,
+            x: req.body.x,
+            y: req.body.y,
+            z: req.body.z,
+            sensorType: "linearAcceleration",
+            time: req.body.time,
+            latitude: req.body.latitude,
+            longitude: req.body.longitude
+        }).then(() => {
+            res.send("done")
+        }).catch((err) => {
+            res.send(err);
+        })
+    } else {
+        res.send("done");
+    }
 });
 route.post('/magnetometer', (req, res) => {
-    models.sensor.create({
-        email: req.body.email,
-        x: req.body.x,
-        y: req.body.y,
-        z: req.body.z,
-        sensorType: "magnetometer",
-        time: req.body.time
-    }).then(() => {
+    if (req.body.latitude !== "0.0") {
+        models.sensor.create({
+            email: req.body.email,
+            x: req.body.x,
+            y: req.body.y,
+            z: req.body.z,
+            sensorType: "magnetometer",
+            time: req.body.time,
+            latitude: req.body.latitude,
+            longitude: req.body.longitude
+        }).then(() => {
+            res.send("done");
+        }).catch((err) => {
+            res.send(err);
+        })
+    } else {
         res.send("done");
-    }).catch((err) => {
-        res.send(err);
-    })
+    }
 });
 route.get('/prediction/:uname', (req, res) => {
     //prediction
-    makePrediction(req.params.uname);
+    console.log("make prediction");
+    makePrediction(req.params.uname).then(()=>{
+        console.log("made prediction");
+    }).catch((err)=>{
+        console.log(err);
+    });
+
     res.send("done");
 });
 route.post('/gyroscope', (req, res) => {
-    models.sensor.create({
-        email: req.body.email,
-        x: req.body.x,
-        y: req.body.y,
-        z: req.body.z,
-        sensorType: "gyroscope",
-        time: req.body.time
-    }).then(() => {
-        res.send("done")
-    }).catch((err) => {
-        res.send(err);
-    })
+    if (req.body.latitude !== "0.0") {
+        models.sensor.create({
+            email: req.body.email,
+            x: req.body.x,
+            y: req.body.y,
+            z: req.body.z,
+            sensorType: "gyroscope",
+            time: req.body.time,
+            latitude: req.body.latitude,
+            longitude: req.body.longitude
+        }).then(() => {
+            res.send("done")
+        }).catch((err) => {
+            res.send(err);
+        })
+    } else {
+        res.send("done");
+    }
 });
 route.get('/report/:email', (req, res) => {
     models.user.findOne({
@@ -224,6 +327,20 @@ route.get('/report/:email', (req, res) => {
             reports: reports
         })
     }).catch((err) => {
+        res.send({
+            reports: ["err"]
+        });
+    })
+});
+route.get('/result/:email', (req, res) => {
+    models.sensorTripResult.find({
+        email: req.params.email
+    }).then((trip) => {
+        res.send({
+            trip:trip[0].trip
+        })
+    }).catch((err) => {
+        console.log(err);
         res.send({
             reports: ["err"]
         });
@@ -264,39 +381,18 @@ route.get('/key/:email', (req, res) => {
         res.send("not available");
     })
 });
-// route.get('/csv', (req, res) => {
-//
-//     makePrediction("serena");
-//     // let filename = "classes.csv";
-//
-//
-//     // models.temp.find().lean().exec({}, function (err, data) {
-//     //
-//     //     if (err) res.send(err);
-//     //
-//     //     res.statusCode = 200;
-//     //
-//     //     res.setHeader('Content-Type', 'text/csv');
-//     //
-//     //     res.setHeader("Content-Disposition", 'attachment; filename=' + filename);
-//     //
-//     //     res.csv(data, true);
-//
-//     // });
-//
-// });
 route.get('/drivers/:email', (req, res) => {
     models.managerDriversMap.findOne({
         ownerID: req.params.email
     }).then((map) => {
-       return sendDriverNames(map,res);
+        return sendDriverNames(map, res);
     }).catch(() => {
         res.send(["notDone"]);
     })
 });
 route.post('/addDriver', (req, res) => {
 
-    if(req.body.driverKey.length !==24)
+    if (req.body.driverKey.length !== 24)
         res.send('notDone');
     else {
         models.user.find({
@@ -329,17 +425,6 @@ route.post('/addDriver', (req, res) => {
             })
     }
 });
-let imgName;
-route.post("/click/:email",(req,res)=>{
-    let dir = './public_html/images/'+req.params.email;
 
-    if (!fs.existsSync(dir)){
-        imgName=1;
-        fs.mkdirSync(dir);
-    }
-    let bitmap = new Buffer(req.body.img, 'base64');
-    fs.writeFileSync("public_html/images/"+req.params.email+"/"+imgName+".jpg", bitmap);
-    imgName++;
-    res.send("got");
-});
+
 module.exports = route;

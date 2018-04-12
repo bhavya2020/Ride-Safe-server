@@ -7,5 +7,6 @@ config.js
 /under18result
 /monitorResult
 /monitorPrediction
-sensors_model.h5
+sensors_pipeline_1.h5
+sensor_pipeline_2.h5
 /public_html/images

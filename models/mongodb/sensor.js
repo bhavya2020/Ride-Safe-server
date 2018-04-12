@@ -7,7 +7,9 @@ const sensorSchema = mongoose.Schema({
     x: String,
     y: String,
     z: String,
-    time: String
+    time: String,
+    latitude:String,
+    longitude:String
 });
 
 module.exports = mongoose.model("sensor", sensorSchema);
