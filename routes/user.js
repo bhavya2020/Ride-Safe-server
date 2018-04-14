@@ -74,7 +74,7 @@ async function makePrediction(uname) {
     }).lean().exec()
         .then((sensorData) => {
         console.log(sensorData.length);
-            if (sensorData.length > 10) {
+            if (sensorData.length > 100) {
                 const json2csv = require('json2csv').parse;
                 const fields = ['sensorType', 'x', 'y', 'z', 'time', 'latitude', 'longitude'];
                 const opts = {fields};
@@ -104,6 +104,15 @@ async function makePrediction(uname) {
 
                     });
                 });
+            }
+            else {
+                models.sensor.remove({
+                    email: uname
+                }).then(()=>{
+                    console.log("very less data");
+                }).catch((Err)=>{
+                    console.log(Err);
+                })
             }
         }).catch((err) => {
         console.log(err);
@@ -335,9 +344,9 @@ route.get('/report/:email', (req, res) => {
 route.get('/result/:email', (req, res) => {
     models.sensorTripResult.find({
         email: req.params.email
-    }).then((trip) => {
+    }).sort({createdAt:-1}).then((trip) => {
         res.send({
-            trip:trip[0].trip
+            trip: trip
         })
     }).catch((err) => {
         console.log(err);
