@@ -8,13 +8,32 @@ const models = require('../models/mongodb/mongo');
 const PythonShell = require('python-shell');
 const Json2csvTransform = require('json2csv').Transform;
 
+function getDistance(trip1,trip2) {
+    return (parseInt((trip2.longitude-trip1.longitude)*(trip2.longitude-trip1.longitude))+parseInt((trip2.latitude-trip1.latitude)*(trip2.latitude-trip1.latitude)));
+}
+// models.sensorTripResult.find().then((results)=>{
+//
+//     for(let result of results) {
+//         result.credits=0;
+//         for (let i = 0; i < result.trip.length - 1; i++) {
+//             if(result.trip[i+1].class===4){
+//                 result.credits+=getDistance(result.trip[i],result.trip[i+1])/10;
+//             }
+//         }
+//         result.save();
+//     }
+//
+// }).catch((Err)=>{
+//     console.log(Err);
+// });
 async function makeMongoDbFromCsv(uname) {
 
     let csvPath = path.join(__dirname, "../", "monitorPrediction/" + uname + ".csv");
     if (fs.existsSync(csvPath)) {
 
         models.sensorTripResult.create({
-            email: uname
+            email: uname,
+            credits:1
         })
             .then((result) => {
                 let flag = false;
@@ -37,10 +56,13 @@ async function makeMongoDbFromCsv(uname) {
                         csvData.push(csvrow);
                     })
                     .on('end', function () {
-                        result.save();
                         //do something with csvData
                         // console.log(csvData[1][0]);
-
+                        for(let i=0;i<result.trip.length-1;i++){
+                            result.credits+=result.credits+=getDistance(result.trip[i],result.trip[i+1])/10;
+                        }
+                        result.save();
+                        console.log(result.credits);
                         fs.unlink(path.join(__dirname, "../", "monitorResult/" + uname + ".csv"), (err) => {
                             fs.unlink(path.join(__dirname, "../", "monitorPrediction/" + uname + ".csv"), () => {
                             })
@@ -333,7 +355,7 @@ route.get('/report/:email', (req, res) => {
         })
     }).then((reports) => {
         res.send({
-            reports: reports
+            reports: reports.reverse()
         })
     }).catch((err) => {
         res.send({

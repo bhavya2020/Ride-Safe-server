@@ -27,7 +27,6 @@ app.use('/',express.static(path.join(__dirname,"./public_html")));
 app.use('/',require("./routes/user"));
 
 
-
 let unameSocketMap={};
 io.on('connection',(socket)=>{
     // console.log(socket.id);

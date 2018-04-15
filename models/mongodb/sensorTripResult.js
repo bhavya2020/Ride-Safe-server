@@ -6,8 +6,9 @@ const sensorTripResultSchema = mongoose.Schema({
         time:String,
         latitude:String,
         longitude:String,
-        class:Number
+        class:Number,
     }]
+    ,credits:Number
 },{
     timestamps:true
 });
