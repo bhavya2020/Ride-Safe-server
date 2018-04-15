@@ -27,9 +27,6 @@ app.use('/',express.static(path.join(__dirname,"./public_html")));
 app.use('/',require("./routes/user"));
 
 
-app.use(function (req, res) {
-    res.send('404');
-});
 
 let unameSocketMap={};
 io.on('connection',(socket)=>{
@@ -57,18 +54,25 @@ io.on('connection',(socket)=>{
     })
 });
 app.post("/click/:email",(req,res)=>{
-    let dir = './public_html/images/'+req.params.email;
 
+    // console.log(req.params.email);
+    let dir = __dirname+'/public_html/images/'+req.params.email;
+    // console.log(dir);
     if (!fs.existsSync(dir)){
+        console.log("dir does not exists");
         imgName[req.params.email]=1;
         oldImgName[req.params.email]=1;
         fs.mkdirSync(dir);
     }
     let bitmap = new Buffer(req.body.img, 'base64');
-    fs.writeFileSync("public_html/images/"+req.params.email+"/"+imgName[req.params.email]+".jpg", bitmap);
+    fs.writeFileSync(__dirname+"/public_html/images/"+req.params.email+"/"+imgName[req.params.email]+".jpg", bitmap);
     imgName[req.params.email]++;
     res.send("got");
 });
+app.use(function (req, res) {
+    res.send('404');
+});
+
 //Listen on port
 Server.listen(CONFIG.SERVER.PORT, function () {
     console.log(`Server running @ http://${CONFIG.SERVER.HOST}:${CONFIG.SERVER.PORT}`);
