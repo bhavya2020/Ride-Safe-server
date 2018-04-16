@@ -2,11 +2,11 @@
 .idea
 /node_modules
 config.js
-17-2-18_Test-1.h5
-18-2-18_Test-2.h5
 /under18result
 /monitorResult
 /monitorPrediction
 sensors_pipeline_1.h5
 sensor_pipeline_2.h5
 /public_html/images
+driver_distraction_model.h5
+driver_age_detect.h5

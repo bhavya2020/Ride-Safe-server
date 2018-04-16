@@ -86,7 +86,9 @@ preds = model1.predict(df_final)
 # In[11]:
 
 
+
 preds = np.argmax(preds,axis=1)
+
 
 
 # In[12]:

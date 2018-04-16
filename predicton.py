@@ -1,4 +1,5 @@
 
+from skimage import io
 import sys
 from keras.models import Sequential
 import pandas as pd
@@ -16,24 +17,16 @@ from keras.callbacks import Callback
 import os
 os.environ['PF_CPP_MIN_LOG_LEVEL']='2'
 
-def inceptionresv2(num_classes):
-	my_model=InceptionResNetV2(include_top=True, weights=sys.argv[3], input_tensor=None, input_shape=None, pooling=None, classes=num_classes)
-	return my_model
-
 
 # Load our model
-num_classes=int (sys.argv[4])
-
-model =inceptionresv2(num_classes)
+model = load_model(sys.argv[3])
 
 
 print(sys.argv[1])
 #Prediction on a single test image
 path=sys.argv[1]
 
-im = cv2.imread(path)
-b,g,r = cv2.split(im)
-im = cv2.merge([r,g,b])
+im = io.imread(path)
 im = cv2.resize(im,(299,299))
 im = np.asarray(im)
 im = im.reshape((1,299,299,3))

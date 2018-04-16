@@ -33,7 +33,7 @@ async function makeMongoDbFromCsv(uname) {
 
         models.sensorTripResult.create({
             email: uname,
-            credits:1
+            credits:0
         })
             .then((result) => {
                 let flag = false;
@@ -59,7 +59,9 @@ async function makeMongoDbFromCsv(uname) {
                         //do something with csvData
                         // console.log(csvData[1][0]);
                         for(let i=0;i<result.trip.length-1;i++){
-                            result.credits+=result.credits+=getDistance(result.trip[i],result.trip[i+1])/10;
+                            if(result.trip[i+1].class===4){
+                            result.credits+=getDistance(result.trip[i],result.trip[i+1])/10;
+                            }
                         }
                         result.save();
                         console.log(result.credits);
@@ -67,6 +69,9 @@ async function makeMongoDbFromCsv(uname) {
                             fs.unlink(path.join(__dirname, "../", "monitorPrediction/" + uname + ".csv"), () => {
                             })
                         });
+                        if(result.trip.length===0){
+                            result.remove();
+                        }
                         models.sensor.remove({
                             email:uname
                         }).then(()=>{
@@ -162,25 +167,29 @@ route.post('/signUp', (req, res) => {
         email: req.body.email
     }).then((user) => {
         if (!user) {
-            let options = {
-                mode: 'text',
-                pythonPath: '/usr/bin/python3.5',
-                pythonOptions: ['-u'],
-                scriptPath: path.join(__dirname, "../"),
-                args: [req.body.profilePic, path.join(__dirname, "../", "under18result/", req.body.email + ".csv"), "17-2-18_Test-1.h5", "2"]
-            };
-            PythonShell.run('predicton.py', options, function (err, results) {
-                if (err) console.log(err);
-                // results is an array consisting of messages collected during execution
-                console.log('results: %j', results);
-            });
-            models.user.create({
-                email: req.body.email
-            }).then(() => {
-                res.send("done")
-            }).catch((err) => {
-                res.send("notDone")
-            });
+            if(req.body.profilePic!==null) {
+                let options = {
+                    mode: 'text',
+                    pythonPath: '/usr/bin/python3.5',
+                    pythonOptions: ['-u'],
+                    scriptPath: path.join(__dirname, "../"),
+                    args: [req.body.profilePic, path.join(__dirname, "../", "under18result/", req.body.email + ".csv"), "driver_age_detect.h5"]
+                };
+                PythonShell.run('predicton.py', options, function (err, results) {
+                    if (err) console.log(err);
+                    // results is an array consisting of messages collected during execution
+                    console.log('results: %j', results);
+                });
+                models.user.create({
+                    email: req.body.email
+                }).then(() => {
+                    res.send("done")
+                }).catch((err) => {
+                    res.send("notDone")
+                });
+            }else{
+                res.send("done");
+            }
 
         }
         else {
