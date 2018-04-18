@@ -10,6 +10,7 @@ const camera=require('./camera');
 const temp=require('./temp');
 const managerDriversMap=require('./managerDriversMap');
 const sensorTripResult=require('./sensorTripResult');
+const distractionResult=require('./distractionResult');
 
 //Use global promise instead of Mongoose's
 mongoose.Promise = global.Promise;
@@ -29,5 +30,5 @@ mongoose.connect(`mongodb://${CONFIG.MONGO.HOST}:${CONFIG.MONGO.PORT}/${CONFIG.M
 
 //Expose models for use elsewhere
 module.exports = {
-    user,culprits,sensor,camera,temp,managerDriversMap,sensorTripResult
+    user,culprits,sensor,camera,temp,managerDriversMap,sensorTripResult,distractionResult
 };

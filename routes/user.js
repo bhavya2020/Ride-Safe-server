@@ -8,9 +8,10 @@ const models = require('../models/mongodb/mongo');
 const PythonShell = require('python-shell');
 const Json2csvTransform = require('json2csv').Transform;
 
-function getDistance(trip1,trip2) {
-    return (parseInt((trip2.longitude-trip1.longitude)*(trip2.longitude-trip1.longitude))+parseInt((trip2.latitude-trip1.latitude)*(trip2.latitude-trip1.latitude)));
+function getDistance(trip1, trip2) {
+    return (parseInt((trip2.longitude - trip1.longitude) * (trip2.longitude - trip1.longitude)) + parseInt((trip2.latitude - trip1.latitude) * (trip2.latitude - trip1.latitude)));
 }
+
 // models.sensorTripResult.find().then((results)=>{
 //
 //     for(let result of results) {
@@ -33,7 +34,7 @@ async function makeMongoDbFromCsv(uname) {
 
         models.sensorTripResult.create({
             email: uname,
-            credits:0
+            credits: 0
         })
             .then((result) => {
                 let flag = false;
@@ -58,9 +59,9 @@ async function makeMongoDbFromCsv(uname) {
                     .on('end', function () {
                         //do something with csvData
                         // console.log(csvData[1][0]);
-                        for(let i=0;i<result.trip.length-1;i++){
-                            if(result.trip[i+1].class===4){
-                            result.credits+=getDistance(result.trip[i],result.trip[i+1])/10;
+                        for (let i = 0; i < result.trip.length - 1; i++) {
+                            if (result.trip[i + 1].class === 4) {
+                                result.credits += getDistance(result.trip[i], result.trip[i + 1]) / 10;
                             }
                         }
                         result.save();
@@ -69,14 +70,14 @@ async function makeMongoDbFromCsv(uname) {
                             fs.unlink(path.join(__dirname, "../", "monitorPrediction/" + uname + ".csv"), () => {
                             })
                         });
-                        if(result.trip.length===0){
+                        if (result.trip.length === 0) {
                             result.remove();
                         }
                         models.sensor.remove({
-                            email:uname
-                        }).then(()=>{
+                            email: uname
+                        }).then(() => {
                             console.log("removed");
-                        }).catch((err)=>{
+                        }).catch((err) => {
                             console.log(err);
                         })
 
@@ -100,7 +101,7 @@ async function makePrediction(uname) {
         email: uname
     }).lean().exec()
         .then((sensorData) => {
-        console.log(sensorData.length);
+            console.log(sensorData.length);
             if (sensorData.length > 100) {
                 const json2csv = require('json2csv').parse;
                 const fields = ['sensorType', 'x', 'y', 'z', 'time', 'latitude', 'longitude'];
@@ -135,9 +136,9 @@ async function makePrediction(uname) {
             else {
                 models.sensor.remove({
                     email: uname
-                }).then(()=>{
+                }).then(() => {
                     console.log("very less data");
-                }).catch((Err)=>{
+                }).catch((Err) => {
                     console.log(Err);
                 })
             }
@@ -162,12 +163,13 @@ async function sendDriverNames(map, res) {
     res.send({drivers: driverNames});
 }
 
+
 route.post('/signUp', (req, res) => {
     models.user.findOne({
         email: req.body.email
     }).then((user) => {
         if (!user) {
-            if(req.body.profilePic!==null) {
+            if (req.body.profilePic !== null) {
                 let options = {
                     mode: 'text',
                     pythonPath: '/usr/bin/python3.5',
@@ -187,7 +189,7 @@ route.post('/signUp', (req, res) => {
                 }).catch((err) => {
                     res.send("notDone")
                 });
-            }else{
+            } else {
                 res.send("done");
             }
 
@@ -327,9 +329,9 @@ route.post('/magnetometer', (req, res) => {
 route.get('/prediction/:uname', (req, res) => {
     //prediction
     console.log("make prediction");
-    makePrediction(req.params.uname).then(()=>{
+    makePrediction(req.params.uname).then(() => {
         console.log("made prediction");
-    }).catch((err)=>{
+    }).catch((err) => {
         console.log(err);
     });
 
@@ -375,7 +377,7 @@ route.get('/report/:email', (req, res) => {
 route.get('/result/:email', (req, res) => {
     models.sensorTripResult.find({
         email: req.params.email
-    }).sort({createdAt:-1}).then((trip) => {
+    }).sort({createdAt: -1}).then((trip) => {
         res.send({
             trip: trip
         })
@@ -466,5 +468,72 @@ route.post('/addDriver', (req, res) => {
     }
 });
 
+async function getDriverNames(map) {
+    let driverNames = [];
+    for (let driver of map.drivers) {
+        await   models.user.find({
+            _id: mongoose.Types.ObjectId(driver)
+        }).then((user) => {
+            let email = user[0].email;
+            driverNames.push(email);
+        }).catch((err) => {
+            console.log(err);
+        })
+    }
+    return driverNames;
+}
+
+async function getNoOfOffences(driverNames) {
+    let driverOffence = [];
+    for (let driverName of driverNames) {
+        await models.distractionResult.findOne({
+            driver: driverName
+        }).then((driverResult) => {
+            let noOfOffences = parseInt(driverResult.c1.length) + parseInt(driverResult.c2.length) + parseInt(driverResult.c3.length) + parseInt(driverResult.c4.length) + parseInt(driverResult.c5.length) + parseInt(driverResult.c6.length) + parseInt(driverResult.c7.length);
+
+            driverOffence.push({
+                driverName: driverName,
+                offences: noOfOffences
+            })
+        }).catch((err) => {
+            console.log(err);
+        })
+    }
+    return driverOffence;
+}
+
+route.get('/all/distractionResult/:email', (req, res) => {
+
+    models.managerDriversMap.findOne({
+        ownerID: req.params.email
+    }).then((map) => {
+        getDriverNames(map).then((driverNames) => {
+            getNoOfOffences(driverNames)
+                .then((driverOffence) => {
+                    res.send({
+                        driverOffence: driverOffence
+                    });
+                }).catch((err) => {
+                console.log(err);
+            })
+
+        }).catch((err) => {
+            console.log(err);
+        })
+
+
+    })
+});
+route.get('/distractionResult/:driverName',(req,res)=>{
+
+    models.distractionResult.findOne({
+        driver:req.params.driverName
+    }).then((driverResult)=>{
+        res.send(driverResult)
+    }).catch((err)=>{
+      console.log(err);
+    })
+
+});
 
 module.exports = route;
