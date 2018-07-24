@@ -489,7 +489,7 @@ async function getNoOfOffences(driverNames) {
         await models.distractionResult.findOne({
             driver: driverName
         }).then((driverResult) => {
-            let noOfOffences = parseInt(driverResult.c1.length) + parseInt(driverResult.c2.length) + parseInt(driverResult.c3.length) + parseInt(driverResult.c4.length) + parseInt(driverResult.c5.length) + parseInt(driverResult.c6.length) + parseInt(driverResult.c7.length);
+let noOfOffences = parseInt(driverResult.c1.length) + parseInt(driverResult.c2.length) + parseInt(driverResult.c3.length) + parseInt(driverResult.c4.length) + parseInt(driverResult.c5.length) + parseInt(driverResult.c6.length) + parseInt(driverResult.c7.length);
 
             driverOffence.push({
                 driverName: driverName,

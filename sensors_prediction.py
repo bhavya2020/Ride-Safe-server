@@ -111,7 +111,7 @@ Y.reset_index(drop=True,inplace=True)
 # In[15]:
 
 
-preds = model2.predict(df_final)
+preds = np.array(model2.predict(df_final))
 preds = np.argmax(preds,axis=1)
 
 
